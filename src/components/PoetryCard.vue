@@ -7,6 +7,14 @@ const { poetry, loading, error, loadPoetry, refreshPoetry } = usePoetry()
 // 主题状态
 const isDark = ref(true)
 
+// 译文显示状态
+const showTranslate = ref(true)
+
+// 切换译文显示
+const toggleTranslate = () => {
+  showTranslate.value = !showTranslate.value
+}
+
 // 从 localStorage 加载主题偏好
 const loadTheme = () => {
   try {
@@ -92,26 +100,49 @@ onMounted(() => {
 
       <!-- 诗词展示 -->
       <article v-else-if="poetry" class="poetry-card">
-        <!-- 完整诗词 -->
-        <section class="full-poetry">
-          <h2 class="poetry-title">{{ poetry.origin.title }}</h2>
-          <p class="poetry-author">
-            —— {{ poetry.origin.dynasty }} · {{ poetry.origin.author }}
-          </p>
+        <!-- 诗词内容容器 -->
+        <div class="poetry-content-wrapper">
+          <!-- 左侧：诗词正文 -->
+          <section class="poetry-main">
+            <div class="full-poetry">
+              <h2 class="poetry-title">{{ poetry.origin.title }}</h2>
+              <p class="poetry-author">
+                —— {{ poetry.origin.dynasty }} · {{ poetry.origin.author }}
+              </p>
 
-          <div class="poetry-lines">
-            <p v-for="(line, index) in poetry.origin.content" :key="index" class="poetry-line">
-              {{ line }}
-            </p>
+              <div class="poetry-lines">
+                <p v-for="(line, index) in poetry.origin.content" :key="index" class="poetry-line">
+                  {{ line }}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- 右侧：译文区域（绝对定位） -->
+        <section v-if="poetry.origin.translate && poetry.origin.translate.length > 0" class="poetry-side">
+          <!-- 译文显示时 -->
+          <div v-if="showTranslate" class="poetry-translate">
+            <div class="translate-header">
+              <h3 class="translate-title">译文</h3>
+              <button @click="toggleTranslate" class="translate-close-btn" title="隐藏译文">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="translate-content">
+              <p v-for="(line, index) in poetry.origin.translate" :key="index" class="translate-line">
+                {{ line }}
+              </p>
+            </div>
           </div>
 
-          <!-- 翻译（如果有） -->
-          <div v-if="poetry.origin.translate && poetry.origin.translate.length > 0" class="poetry-translate">
-            <h3 class="translate-title">译文</h3>
-            <p v-for="(line, index) in poetry.origin.translate" :key="index" class="translate-line">
-              {{ line }}
-            </p>
-          </div>
+          <!-- 译文隐藏时的按钮 -->
+          <button v-else @click="toggleTranslate" class="translate-toggle-btn">
+            译文
+          </button>
         </section>
       </article>
     </main>
@@ -182,7 +213,7 @@ onMounted(() => {
 /* 主内容区域 */
 .poetry-content {
   width: 100%;
-  max-width: 1000px;
+  //max-width: 1000px;
 }
 
 /* 加载状态 */
@@ -247,8 +278,8 @@ onMounted(() => {
   padding: 3rem 2.5rem;
   //box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   //border: 1px solid var(--border-color, rgba(212, 175, 55, 0.2));
-  //position: relative;
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
 }
 
 .poetry-card::before {
@@ -259,6 +290,49 @@ onMounted(() => {
   right: 0;
   height: 3px;
   //background: linear-gradient(90deg, var(--accent-color, #d4af37), var(--accent-color-secondary, #c9a962));
+}
+
+/* 诗词内容容器 */
+.poetry-content-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* 左侧：诗词正文 */
+.poetry-main {
+  text-align: center;
+  flex: 0 1 auto;
+}
+
+/* 右侧：译文区域（绝对定位） */
+.poetry-side {
+  position: absolute;
+  right: 2.5rem;
+  top: 3rem;
+  width: 400px;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+}
+
+/* 译文切换按钮（隐藏状态） */
+.translate-toggle-btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.1));
+  border: 1px solid var(--border-color, rgba(212, 175, 55, 0.3));
+  border-radius: 8px;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.translate-toggle-btn:hover {
+  background: var(--accent-color, #d4af37);
+  border-color: var(--accent-color, #d4af37);
+  color: var(--card-bg, #16213e);
 }
 
 /* 完整诗词 */
@@ -299,9 +373,59 @@ onMounted(() => {
 
 /* 翻译 */
 .poetry-translate {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed var(--border-color, rgba(212, 175, 55, 0.2));
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  border-left: 3px solid var(--accent-color, #d4af37);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 译文头部 */
+.translate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, rgba(212, 175, 55, 0.2));
+}
+
+/* 译文内容区 */
+.translate-content {
+  padding: 1rem 1.5rem;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+
+/* 关闭译文按钮 */
+.translate-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(212, 175, 55, 0.3));
+  color: var(--text-primary, #e0e0e0);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.translate-close-btn:hover {
+  background: var(--accent-color, #d4af37);
+  border-color: var(--accent-color, #d4af37);
+  color: var(--card-bg, #16213e);
 }
 
 .translate-title {
@@ -314,8 +438,9 @@ onMounted(() => {
 .translate-line {
   font-size: 1.1rem;
   line-height: 1.8;
-  opacity: 0.8;
-  margin-bottom: 0.5rem;
+  opacity: 0.85;
+  margin-bottom: 0.75rem;
+  text-align: left;
 }
 
 /* 悬浮按钮 */
@@ -370,6 +495,14 @@ onMounted(() => {
 
   .poetry-card {
     padding: 1.5rem;
+    position: relative;
+  }
+
+  .poetry-side {
+    position: static;
+    width: 100%;
+    max-height: none;
+    margin-top: 2rem;
   }
 
   .poetry-title {
